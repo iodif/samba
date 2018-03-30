@@ -84,8 +84,8 @@ ENVIRONMENT VARIABLES (only available with `docker run`)
  * `USER` - As above, setup a user
  * `WIDELINKS` - As above, allow access wide symbolic links
  * `WORKGROUP` - As above, set workgroup
- * `USERID` - Set the UID for the samba server
- * `GROUPID` - Set the GID for the samba server
+ * `USERID` - Set the UID for the samba server/stored files
+ * `GROUPID` - Set the GID for the samba server/stored files
 
 **NOTE**: if you enable nmbd (via `-n` or the `NMBD` environment variable), you
 will also want to expose port 137 and 138 with `-p 137:137/udp -p 138:138/udp`.
@@ -101,7 +101,7 @@ Any of the commands can be run at creation with `docker run` or later with
 
 ### Start an instance creating users and shares:
 
-    sudo docker run -it -p 139:139 -p 445:445 -d iodif/samba \
+    sudo docker run -it -p 139:139 -p 445:445 -d -e USERID=1000 -e GROUPID=1000 iodif/samba \
                 -u "example1;badpass" \
                 -u "example2;badpass" \
                 -s "public;/share" \
