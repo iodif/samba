@@ -1,8 +1,12 @@
-[![logo](https://raw.githubusercontent.com/dperson/samba/master/logo.jpg)](https://www.samba.org)
+[![logo](https://raw.githubusercontent.com/iodif/samba/master/logo.jpg)](https://www.samba.org)
 
 # Samba
 
 Samba docker container
+
+# Credits
+
+This repo is a clone from https://github.com/dperson/samba and adapted to my personal needs. Feel free to use it but I would strongly suggest to give David Personettes original image a try: he is doing a good job there! Thanks!
 
 # What is Samba?
 
@@ -16,17 +20,17 @@ By default there are no shares configured, additional ones can be added.
 
 ## Hosting a Samba instance
 
-    sudo docker run -it -p 139:139 -p 445:445 -d dperson/samba
+    sudo docker run -it -p 139:139 -p 445:445 -d iodif/samba
 
 OR set local storage:
 
     sudo docker run -it --name samba -p 139:139 -p 445:445 \
                 -v /path/to/directory:/mount \
-                -d dperson/samba
+                -d iodif/samba
 
 ## Configuration
 
-    sudo docker run -it --rm dperson/samba -h
+    sudo docker run -it --rm iodif/samba -h
     Usage: samba.sh [-opt] [command]
     Options (fields in '[]' are optional, '<>' are required):
         -h          This help
@@ -93,11 +97,11 @@ Any of the commands can be run at creation with `docker run` or later with
 
 ### Setting the Timezone
 
-    sudo docker run -it -e TZ=EST5EDT -p 139:139 -p 445:445 -d dperson/samba
+    sudo docker run -it -e TZ=EST5EDT -p 139:139 -p 445:445 -d iodif/samba
 
 ### Start an instance creating users and shares:
 
-    sudo docker run -it -p 139:139 -p 445:445 -d dperson/samba \
+    sudo docker run -it -p 139:139 -p 445:445 -d iodif/samba \
                 -u "example1;badpass" \
                 -u "example2;badpass" \
                 -s "public;/share" \
@@ -110,4 +114,4 @@ Any of the commands can be run at creation with `docker run` or later with
 ## Issues
 
 If you have any problems with or questions about this image, please contact me
-through a [GitHub issue](https://github.com/dperson/samba/issues).
+through a [GitHub issue](https://github.com/iodif/samba/issues).
