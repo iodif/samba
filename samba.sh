@@ -51,7 +51,7 @@ global() { local key="${1%%=*}" value="${1#*=}" file=/etc/samba/smb.conf
 # Return: user(s) added to container
 import() { local file="$1" name id
     while read name id; do
-        grep -q "^$name:" /etc/passwd || adduser -D -H -u "$id" -s /bin/false "$name"
+        grep -q "^$name:" /etc/passwd || adduser -D -h "${HOMEBASEDIR:-/tmp}/$name" -u "$id" -s /bin/false "$name"
     done < <(cut -d: -f1,2 $file | sed 's/:/ /')
     pdbedit -i smbpasswd:$file
 }
@@ -65,6 +65,12 @@ perms() { local i file=/etc/samba/smb.conf
         chown -Rh smbuser. $i
         find $i -type d ! -perm 770 -exec chmod 770 {} \;
         find $i -type f ! -perm 0660 -exec chmod 0660 {} \;
+    done
+    for i in $(pdbedit -L | cut -d: -f1); do
+        i="${HOMEBASEDIR}/$i"
+        chown -Rh smbuser. $i
+        find $i -type d ! -perm 700 -exec chmod 700 {} \;
+        find $i -type f ! -perm 0600 -exec chmod 0600 {} \;
     done
 }
 
@@ -131,7 +137,7 @@ smb() { local file=/etc/samba/smb.conf
 user() { local name="$1" passwd="$2" id="${3:-""}" group="${4:-""}"
     [[ "$group" ]] && { grep -q "^$group:" /etc/group || addgroup "$group"; }
     grep -q "^$name:" /etc/passwd ||
-        adduser -D -H ${group:+-G $group} ${id:+-u $id} -s /bin/false "$name"
+        adduser -D -h "${HOMEBASEDIR:-/tmp}/$name" ${group:+-G $group} ${id:+-u $id} -s /bin/false "$name"
     echo -e "$passwd\n$passwd" | smbpasswd -s -a "$name"
 }
 
@@ -151,6 +157,31 @@ widelinks() { local file=/etc/samba/smb.conf \
             replace='\1\n   wide links = yes\n   unix extensions = no'
     sed -i 's/\(follow symlinks = yes\)/'"$replace"'/' $file
 }
+
+### home: enable access to personal home directories
+# Arguments:
+#   none)
+# Return: result
+home() { 
+  local file=/etc/samba/smb.conf
+  {
+    echo "[homes]"
+    echo "   comment = Home Directories"
+    echo "   browseable = no"
+    echo "   read only = no"
+    echo "   create mask = 0600"
+    echo "   force create mode = 0700"
+    echo "   directory mask = 0700"
+    echo "   force directory mode = 0700"
+    echo "   valid users = %S"
+    echo -n "   veto files = /._*/.apdisk/.AppleDouble/.DS_Store/"
+    echo -n ".TemporaryItems/.Trashes/desktop.ini/ehthumbs.db/"
+    echo "Network Trash Folder/Temporary Items/Thumbs.db/"
+    echo "   delete veto files = yes"
+    echo
+  } >> $file
+}
+
 
 ### usage: Help
 # Arguments:
@@ -232,6 +263,7 @@ shift $(( OPTIND - 1 ))
 [[ "${USER:-""}" ]] && eval user $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $USER)
 [[ "${WORKGROUP:-""}" ]] && workgroup "$WORKGROUP"
 [[ "${WIDELINKS:-""}" ]] && widelinks
+[[ "${HOMEBASEDIR:-""}" ]] && home
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
