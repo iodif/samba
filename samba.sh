@@ -63,8 +63,8 @@ import() { local file="$1" name id
 perms() { local i file=/etc/samba/smb.conf
     for i in $(awk -F ' = ' '/   path = / {print $2}' $file); do
         chown -Rh smbuser. $i
-        find $i -type d ! -perm 775 -exec chmod 775 {} \;
-        find $i -type f ! -perm 0664 -exec chmod 0664 {} \;
+        find $i -type d ! -perm 770 -exec chmod 770 {} \;
+        find $i -type f ! -perm 0660 -exec chmod 0660 {} \;
     done
 }
 

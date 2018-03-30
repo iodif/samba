@@ -18,10 +18,10 @@ RUN apk --no-cache --no-progress upgrade && \
     echo '   pam password change = yes' >>$file && \
     echo '   map to guest = bad user' >>$file && \
     echo '   usershare allow guests = yes' >>$file && \
-    echo '   create mask = 0664' >>$file && \
-    echo '   force create mode = 0664' >>$file && \
-    echo '   directory mask = 0775' >>$file && \
-    echo '   force directory mode = 0775' >>$file && \
+    echo '   create mask = 0660' >>$file && \
+    echo '   force create mode = 0660' >>$file && \
+    echo '   directory mask = 0770' >>$file && \
+    echo '   force directory mode = 0770' >>$file && \
     echo '   force user = smbuser' >>$file && \
     echo '   force group = users' >>$file && \
     echo '   follow symlinks = yes' >>$file && \
