@@ -86,6 +86,7 @@ ENVIRONMENT VARIABLES (only available with `docker run`)
  * `WORKGROUP` - As above, set workgroup
  * `USERID` - Set the UID for the samba server/stored files
  * `GROUPID` - Set the GID for the samba server/stored files
+ * `HOMEBASEDIR` - Set the full qualified base path for home directories and activate functionality
 
 **NOTE**: if you enable nmbd (via `-n` or the `NMBD` environment variable), you
 will also want to expose port 137 and 138 with `-p 137:137/udp -p 138:138/udp`.
