@@ -89,7 +89,9 @@ ENVIRONMENT VARIABLES (only available with `docker run`)
  * `HOMEBASEDIR` - Set the full qualified base path for home directories and activate functionality
 
 **NOTE**: if you enable nmbd (via `-n` or the `NMBD` environment variable), you
-will also want to expose port 137 and 138 with `-p 137:137/udp -p 138:138/udp`.
+will also want to expose port 137 and 138 with `-p 137:137/udp -p 138:138/udp`
+and run the container on the host network via `--network host` (otherwise service
+discovery in the network neighborhood does not work).
 
 ## Examples
 
