@@ -38,7 +38,7 @@ OR set local storage:
                     required arg: "<from:to>" character mappings separated by ','
         -g "<parameter>" Provide global option for smb.conf
                     required arg: "<parameter>" - IE: -g "log level = 2"
-        -i "<path>" Import smbpassword
+        -i "<path>" Import smbpasswd file
                     required arg: "<path>" - full file path in container
         -n          Start the 'nmbd' daemon to advertise the shares
         -p          Set ownership and permissions on the shares
@@ -67,10 +67,15 @@ OR set local storage:
                     required arg: "<workgroup>"
                     <workgroup> for samba
         -W          Allow access wide symbolic links
+        -I          Add an include option at the end of the smb.conf
+                    required arg: "<include file path>"
+                    <include file path> in the container, e.g. a bind mount
+        -x "<path>" export smbpasswd file
+                    required arg: "<path>" - full file path in container
 
     The 'command' (if provided and valid) will be run instead of samba
 
-ENVIRONMENT VARIABLES (only available with `docker run`)
+ENVIRONMENT VARIABLES
 
  * `CHARMAP` - As above, configure character mapping
  * `GLOBAL` - As above, configure a global option
@@ -87,6 +92,7 @@ ENVIRONMENT VARIABLES (only available with `docker run`)
  * `USERID` - Set the UID for the samba server/stored files
  * `GROUPID` - Set the GID for the samba server/stored files
  * `HOMEBASEDIR` - Set the full qualified base path for home directories and activate functionality
+ * `INCLUDE` - As above, add a smb.conf include
 
 **NOTE**: if you enable nmbd (via `-n` or the `NMBD` environment variable), you
 will also want to expose port 137 and 138 with `-p 137:137/udp -p 138:138/udp`
@@ -109,8 +115,8 @@ Any of the commands can be run at creation with `docker run` or later with
                 -u "example2;badpass" \
                 -s "public;/share" \
                 -s "users;/srv;no;no;no;example1,example2" \
-                -s "example1 private;/example1;no;no;no;example1" \
-                -s "example2 private;/example2;no;no;no;example2"
+                -s "example1 private share;/example1;no;no;no;example1" \
+                -s "example2 private share;/example2;no;no;no;example2"
 
 # User Feedback
 

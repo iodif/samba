@@ -48,6 +48,14 @@ global() { local key="${1%%=*}" value="${1#*=}" file=/etc/samba/smb.conf
     fi
 }
 
+### include: add a samba config file include
+# Arguments:
+#   file) file to import
+include() { local includefile="$1" file=/etc/samba/smb.conf
+    sed -i "\\|include = $includefile|d" "$file"
+    echo "include = $includefile" >> "$file"
+}
+
 ### import: import a smbpasswd file
 # Arguments:
 #   file) file to import
@@ -229,6 +237,9 @@ Options (fields in '[]' are optional, '<>' are required):
     -W          Allow access wide symbolic links
     -x \"<path>\" export passwords to file (in smbpasswd style)
                 required arg: \"<path>\" - full file path in container
+    -I          Add an include option at the end of the smb.conf
+                required arg: \"<include file path>\"
+                <include file path> in the container, e.g. a bind mount
 
 The 'command' (if provided and valid) will be run instead of samba
 " >&2
@@ -249,12 +260,13 @@ stop() {
 [[ "${USERID:-""}" =~ ^[0-9]+$ ]] && usermod -u $USERID -o smbuser
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o users
 
-while getopts ":hc:g:i:nprs:Su:Ww:x:" opt; do
+while getopts ":hc:g:i:nprs:Su:Ww:I:x:" opt; do
     case "$opt" in
         h) usage ;;
         c) charmap "$OPTARG" ;;
         g) global "$OPTARG" ;;
         i) import "$OPTARG" ;;
+        I) include "$OPTARG" ;;
         n) NMBD="true" ;;
         p) PERMISSIONS="true" ;;
         r) recycle ;;
@@ -281,6 +293,7 @@ shift $(( OPTIND - 1 ))
 [[ "${WORKGROUP:-""}" ]] && workgroup "$WORKGROUP"
 [[ "${WIDELINKS:-""}" ]] && widelinks
 [[ "${HOMEBASEDIR:-""}" ]] && home
+[[ "${INCLUDE:-""}" ]] && include "$INCLUDE"
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
@@ -292,6 +305,6 @@ elif ps -ef | egrep -v grep | grep -q smbd; then
 else
     [[ ${NMBD:-""} ]] && ionice -c 3 nmbd -D
     trap 'stop' SIGTERM SIGQUIT SIGINT
-    ionice -c 3 smbd -FS </dev/null
+    ionice -c 3 smbd -FS --no-process-group</dev/null
 fi
 
