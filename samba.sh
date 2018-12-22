@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+set -x 
+
 #===============================================================================
 #          FILE: samba.sh
 #
@@ -195,7 +198,7 @@ Options (fields in '[]' are optional, '<>' are required):
                 required arg: \"<from:to>\" character mappings separated by ','
     -g \"<parameter>\" Provide global option for smb.conf
                     required arg: \"<parameter>\" - IE: -g \"log level = 2\"
-    -i \"<path>\" Import smbpassword
+    -i \"<path>\" Import smbpassword file
                 required arg: \"<path>\" - full file path in container
     -n          Start the 'nmbd' daemon to advertise the shares
     -p          Set ownership and permissions on the shares
@@ -224,16 +227,29 @@ Options (fields in '[]' are optional, '<>' are required):
                 required arg: \"<workgroup>\"
                 <workgroup> for samba
     -W          Allow access wide symbolic links
+    -x \"<path>\" export passwords to file (in smbpasswd style)
+                required arg: \"<path>\" - full file path in container
 
 The 'command' (if provided and valid) will be run instead of samba
 " >&2
     exit $RC
 }
 
+### stop: gracefully stop and cleanup
+# Arguments:
+#   none)
+# Return: result
+stop() { 
+  set -x
+  [[ ${NMBD:-""} ]] && killall nmbd
+  [[ "${EXPORTPASSDB:-""}" ]] && pdbedit -Lw > "${EXPORTPASSDB}"
+  set +x
+}
+
 [[ "${USERID:-""}" =~ ^[0-9]+$ ]] && usermod -u $USERID -o smbuser
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o users
 
-while getopts ":hc:g:i:nprs:Su:Ww:" opt; do
+while getopts ":hc:g:i:nprs:Su:Ww:x:" opt; do
     case "$opt" in
         h) usage ;;
         c) charmap "$OPTARG" ;;
@@ -247,6 +263,7 @@ while getopts ":hc:g:i:nprs:Su:Ww:" opt; do
         u) eval user $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         w) workgroup "$OPTARG" ;;
         W) widelinks ;;
+        x) EXPORTPASSDB="$OPTARG" ;;
         "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
         ":") echo "No argument value for option: -$OPTARG"; usage 2 ;;
     esac
@@ -274,5 +291,7 @@ elif ps -ef | egrep -v grep | grep -q smbd; then
     echo "Service already running, please restart container to apply changes"
 else
     [[ ${NMBD:-""} ]] && ionice -c 3 nmbd -D
-    exec ionice -c 3 smbd -FS </dev/null
+    trap 'stop' SIGTERM SIGQUIT SIGINT
+    ionice -c 3 smbd -FS </dev/null
 fi
+
