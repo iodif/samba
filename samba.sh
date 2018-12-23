@@ -62,7 +62,7 @@ include() { local includefile="$1" file=/etc/samba/smb.conf
 # Return: user(s) added to container
 import() { local file="$1" name id
     while read name id; do
-        grep -q "^$name:" /etc/passwd || adduser -D -h "${HOMEBASEDIR:-/tmp}/$name" -u "$id" -s /bin/false "$name"
+        grep -q "^$name:" /etc/passwd || adduser -D -h "/home/$name" -u "$id" -s /bin/false "$name"
     done < <(cut -d: -f1,2 $file | sed 's/:/ /')
     pdbedit -i smbpasswd:$file
 }
@@ -71,17 +71,17 @@ import() { local file="$1" name id
 # Arguments:
 #   none)
 # Return: result
-perms() { local i file=/etc/samba/smb.conf
+perms() { local i h file=/etc/samba/smb.conf
     for i in $(awk -F ' = ' '/   path = / {print $2}' $file); do
         chown -Rh smbuser. $i
         find $i -type d ! -perm 770 -exec chmod 770 {} \;
         find $i -type f ! -perm 0660 -exec chmod 0660 {} \;
     done
     for i in $(pdbedit -L | cut -d: -f1); do
-        i="${HOMEBASEDIR}/$i"
-        chown -Rh smbuser. $i
-        find $i -type d ! -perm 700 -exec chmod 700 {} \;
-        find $i -type f ! -perm 0600 -exec chmod 0600 {} \;
+        h="/home/$i"
+        chown -Rh smbuser. $h
+        find $h -type d ! -perm 700 -exec chmod 700 {} \;
+        find $h -type f ! -perm 0600 -exec chmod 0600 {} \;
     done
 }
 
@@ -148,7 +148,7 @@ smb() { local file=/etc/samba/smb.conf
 user() { local name="$1" passwd="$2" id="${3:-""}" group="${4:-""}"
     [[ "$group" ]] && { grep -q "^$group:" /etc/group || addgroup "$group"; }
     grep -q "^$name:" /etc/passwd ||
-        adduser -D -h "${HOMEBASEDIR:-/tmp}/$name" ${group:+-G $group} ${id:+-u $id} -s /bin/false "$name"
+        adduser -D -h "/home/$name" ${group:+-G $group} ${id:+-u $id} -s /bin/false "$name"
     echo -e "$passwd\n$passwd" | smbpasswd -s -a "$name"
 }
 
@@ -175,6 +175,8 @@ widelinks() { local file=/etc/samba/smb.conf \
 # Return: result
 home() { 
   local file=/etc/samba/smb.conf
+  [[ -f /home/NOT_A_VOLUME_INDICATOR ]] \
+    && echo 'WARNING: /home/ is not a Docker volume, files created in personal home directories will get lost during shutdown...!'
   {
     echo "[homes]"
     echo "   comment = Home Directories"
@@ -202,6 +204,7 @@ usage() { local RC="${1:-0}"
     echo "Usage: ${0##*/} [-opt] [command]
 Options (fields in '[]' are optional, '<>' are required):
     -h          This help
+    -H          Enable personal home directories
     -c \"<from:to>\" setup character mapping for file/directory names
                 required arg: \"<from:to>\" character mappings separated by ','
     -g \"<parameter>\" Provide global option for smb.conf
@@ -260,9 +263,10 @@ stop() {
 [[ "${USERID:-""}" =~ ^[0-9]+$ ]] && usermod -u $USERID -o smbuser
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o users
 
-while getopts ":hc:g:i:nprs:Su:Ww:I:x:" opt; do
+while getopts ":hHc:g:i:nprs:Su:Ww:I:x:" opt; do
     case "$opt" in
         h) usage ;;
+        H) home ;;
         c) charmap "$OPTARG" ;;
         g) global "$OPTARG" ;;
         i) import "$OPTARG" ;;
@@ -292,7 +296,7 @@ shift $(( OPTIND - 1 ))
 [[ "${USER:-""}" ]] && eval user $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $USER)
 [[ "${WORKGROUP:-""}" ]] && workgroup "$WORKGROUP"
 [[ "${WIDELINKS:-""}" ]] && widelinks
-[[ "${HOMEBASEDIR:-""}" ]] && home
+[[ "${HOMEDIRS:-""}" ]] && home 
 [[ "${INCLUDE:-""}" ]] && include "$INCLUDE"
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
@@ -305,6 +309,6 @@ elif ps -ef | egrep -v grep | grep -q smbd; then
 else
     [[ ${NMBD:-""} ]] && ionice -c 3 nmbd -D
     trap 'stop' SIGTERM SIGQUIT SIGINT
-    ionice -c 3 smbd -FS --no-process-group</dev/null
+    ionice -c 3 smbd -FS --no-process-group </dev/null
 fi
 

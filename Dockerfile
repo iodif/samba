@@ -54,6 +54,7 @@ RUN apk --no-cache --no-progress upgrade && \
     echo '   fruit:time machine = yes' >>$file && \
     echo '   smb2 leases = yes' >>$file && \
     echo '' >>$file && \
+    touch /home/NOT_A_VOLUME_INDICATOR && \
     rm -rf /tmp/*
 
 COPY samba.sh /usr/bin/
