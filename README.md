@@ -26,6 +26,7 @@ OR set local storage:
 
     sudo docker run -it --name samba -p 139:139 -p 445:445 \
                 -v /path/to/directory:/mount \
+                -v /path/to/another/directory:/home \
                 -d iodif/samba
 
 ## Configuration
@@ -34,6 +35,7 @@ OR set local storage:
     Usage: samba.sh [-opt] [command]
     Options (fields in '[]' are optional, '<>' are required):
         -h          This help
+        -H          Enable personal home directories
         -c "<from:to>" setup character mapping for file/directory names
                     required arg: "<from:to>" character mappings separated by ','
         -g "<parameter>" Provide global option for smb.conf
@@ -91,7 +93,7 @@ ENVIRONMENT VARIABLES
  * `WORKGROUP` - As above, set workgroup
  * `USERID` - Set the UID for the samba server/stored files
  * `GROUPID` - Set the GID for the samba server/stored files
- * `HOMEBASEDIR` - Set the full qualified base path for home directories and activate functionality
+ * `HOMEDIRS` - As above, activate personal home directories
  * `INCLUDE` - As above, add a smb.conf include
 
 **NOTE**: if you enable nmbd (via `-n` or the `NMBD` environment variable), you
